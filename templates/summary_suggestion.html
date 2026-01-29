@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Summary Suggestion Engine</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: 140px;
+            padding: 10px;
+        }
+        .box {
+            max-width: 700px;
+            margin: 40px auto;
+            font-family: Arial;
+        }
+        .result {
+            background: #b7cded;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Resume Summary Feedback</h2>
+
+    <!-- <form method="post">
+        {% csrf_token %} -->
+        <!-- <textarea name="summary_text" placeholder="Paste your resume summary here...">{{ text_input }}</textarea>
+        <br><br> -->
+        <!-- <button type="submit">Get AI Feedback</button> -->
+        <textarea 
+            id="summaryText"
+            placeholder="Paste your resume summary here...">
+        </textarea>
+
+        <br><br>
+
+        <button type="button" id="rateBtn" >Get Rating</button>
+        <button type="button" id="moreBtn" style="display:none; ">Get More Insights</button>
+
+        <div class="result" id="ratingBox" style="display:none;"></div>
+        <div class="result" id="insightBox" style="display:none;"></div>
+
+    <!-- </form> -->
+
+    <!-- {% if suggestion %}
+        <div class="result">
+            <h4>AI Suggestion</h4>
+            <p>{{ suggestion|linebreaks  }}</p>
+        </div>
+    {% endif %} -->
+</div>
+<script>
+const csrfToken = "{{ csrf_token }}";
+
+function postData(mode) {
+    fetch("{% url 'summary_suggestion' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/x-www-form-urlencoded"
+
+        },
+        body: new URLSearchParams({
+            summary_text: document.getElementById("summaryText").value,
+            mode: mode
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (mode === "rating") {
+            document.getElementById("ratingBox").innerText = data.result;
+            document.getElementById("ratingBox").style.display = "block";
+            document.getElementById("moreBtn").style.display = "inline-block";
+        } else {
+            document.getElementById("insightBox").innerText = data.result;
+            document.getElementById("insightBox").style.display = "block";
+        }
+    });
+}
+
+document.getElementById("rateBtn").onclick = () => postData("rating");
+document.getElementById("moreBtn").onclick = () => postData("details");
+</script>
+
+</body>
+</html>

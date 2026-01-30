@@ -29,9 +29,9 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_KEY = os.environ.get("API_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+DEBUG = False
+ALLOWED_HOSTS = ['.onrender.com']
+# ALLOWED_HOSTS = ['*']
 
 
 # Application definition

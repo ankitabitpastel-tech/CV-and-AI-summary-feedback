@@ -104,7 +104,7 @@ def generate_skills_suggestion(skills_input, mode="rating"):
 
             ONLY do this:
             1. Evaluate the given skills based on current global job market trends.
-            3. Provide ONE motivating feedback line.
+            3. Provide ONE motivating feedback line with relivant positions they can apply.
 
             Output format (strict):
              sort feedback

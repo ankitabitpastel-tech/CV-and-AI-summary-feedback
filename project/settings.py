@@ -30,8 +30,8 @@ API_KEY = os.environ.get("API_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-ALLOWED_HOSTS = ['.onrender.com']
-# ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <form id="exportForm" method="POST" action="{% url 'export_users_csv' %}">
+    {% csrf_token %}
+
+    <div>
+        <h5>Column choice:</h5>
+        <label><input type="checkbox" name="columns" value="name" checked> Name</label>
+        <label><input type="checkbox" name="columns" value="email" checked> Email</label>
+        <label><input type="checkbox" name="columns" value="location"> Location</label>
+        <label><input type="checkbox" name="columns" value="gender"> Gender</label>
+        <label><input type="checkbox" name="columns" value="college"> College</label>
+        <label><input type="checkbox" name="columns" value="cgpa"> CGPA</label>
+        <label><input type="checkbox" name="columns" value="skills"> Skills</label>
+        <label><input type="checkbox" name="columns" value="additional_skills"> Additional Skills</label>
+
+    </div>
+
+    <br>
+
+    <button type="submit" name="export_type" value="selected">Export Selected</button>
+
+    <button type="submit" name="export_type" value="all">
+        Export All
+    </button>
+
+    <table border="1" cellpadding="6">
+    <thead>
+        <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Location</th>
+            <th>Gender</th>
+            <th>College</th>
+            <th>CGPA</th>
+            <th>Skills</th>
+            <th>Additional Skills</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in user_data %}
+        <tr>
+            <td><input type="checkbox" name="user_ids" value="{{ row.user.id }}"></td>
+            <td>{{ row.user.id }}</td>
+            <td>{{ row.user.first_name }} {{ row.user.last_name }}</td>
+            <td>{{ row.user.email }}</td>
+
+            <td>{{ row.additionals.location|default:"-" }}</td>
+            <td>{{ row.additionals.gender|default:"-" }}</td>
+            <td>{{ row.additionals.college|default:"-" }}</td>
+            <td>{{ row.additionals.cgpa|default:"-" }}</td>
+
+            <td>
+                {% if row.additionals and row.additionals.skills %}
+                    {{ row.additionals.skills|join:", " }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if row.additionals and row.additionals.additional_skills %}
+                    {{ row.additionals.additional_skills|join:", " }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</form>
+<!-- <script>
+document.querySelector('[value="all"]').addEventListener("click", function () {
+    document.querySelectorAll('input[name="columns"]').forEach(cb => {
+        cb.checked = true;
+    });
+});
+</script> -->
+
+</body>
+</html>

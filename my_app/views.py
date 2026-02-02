@@ -1,4 +1,4 @@
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponse
 from django.shortcuts import render
 from django.conf import settings
 from .models import *
@@ -9,6 +9,7 @@ import google.generativeai as genai
 
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
+import csv
 # from .models import User, UserAdditionals
 
 
@@ -156,3 +157,84 @@ def skills_suggestion_view(request):
         request,
         "skill_suggestion.html"
     )
+
+def user_list(request):
+    users = User.objects.all()
+    additionals_map = {
+        int(ua.user_id) :ua
+        for ua in UserAdditionals.objects.all()
+
+    }
+    user_data = []
+    for user in users:
+        user_data.append({
+            'user': user,
+            'additionals': additionals_map.get(user.id)
+        })
+    return render(request, 'user_list.html' ,{
+        'user_data':user_data
+    })
+
+
+def export_users_csv(request):
+    TABLE_COLUMNS = [
+    "name",
+    "email",
+    "location",
+    "gender",
+    "college",
+    "cgpa",
+    "skills",
+    "additional_skills",
+]
+
+
+    export_type = request.POST.get("export_type", "selected")
+    
+    selected_columns = request.POST.getlist("columns")
+    if export_type == "all":
+            selected_columns = TABLE_COLUMNS
+            users = User.objects.all()
+            additionals = UserAdditionals.objects.all()
+    else:
+        selected_user_ids = request.POST.getlist("user_ids")
+        users = User.objects.filter(id__in=selected_user_ids)
+        additionals = UserAdditionals.objects.filter(user_id__in=selected_user_ids)
+
+    additionals_map = {
+        ua.user_id: ua for ua in additionals
+    }
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="users.csv"'
+
+    writer = csv.writer(response)
+
+
+    writer.writerow([col.upper() for col in selected_columns])
+
+    for user in users:
+        ua = additionals_map.get(user.id)
+        row = []
+
+        for col in selected_columns:
+            if col == "name":
+                row.append(f"{user.first_name} {user.last_name}")
+            elif col == "email":
+                row.append(user.email)
+            elif col == "location":
+                row.append(ua.location if ua else "-")
+            elif col == "gender":
+                row.append(ua.gender if ua else "-")
+            elif col == "college":
+                row.append(ua.college if ua else "-")
+            elif col == "cgpa":
+                row.append(ua.cgpa if ua else "-")
+            elif col == "skills":
+                row.append(ua.skills if ua and ua.skills else "-")
+            elif col == "additional_skills":
+                row.append(ua.additional_skills if ua and ua.skills else "-")
+
+        writer.writerow(row)
+
+    return response

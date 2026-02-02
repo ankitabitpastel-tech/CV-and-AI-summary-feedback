@@ -9,6 +9,7 @@
             width: 100%;
             height: 140px;
             padding: 10px;
+            box-sizing: border-box;
         }
         .box {
             max-width: 700px;
@@ -27,6 +28,9 @@
 
 <div class="box">
     <h2>Skills Feedback (Global Job Market)</h2>
+    <br><br>
+    <button type="button" onclick="downloadImage()">Download as Image</button>
+    <button type="button" onclick="downloadPDF()">Download as PDF</button>
 
     <!-- <textarea
         id="skillsText"
@@ -45,6 +49,8 @@
 </div>
 
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 const quill = new Quill('#skillsEditor', {
@@ -89,6 +95,58 @@ function postSkills(mode) {
 
 document.getElementById("rateBtn").onclick = () => postSkills("rating");
 document.getElementById("moreBtn").onclick = () => postSkills("details");
+
+
+function downloadImage() {
+    const element = document.querySelector(".box");
+
+    html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+    }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "skills-feedback.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+}
+
+function downloadPDF() {
+    const jsPDF = window.jspdf.jsPDF;
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const skillsHTML = quill.root.innerHTML;
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = skillsHTML;
+    const skillsText = tempDiv.innerText.trim() || "-";
+
+    const suggestion = document.getElementById("ratingBox").innerText.trim() || "-";
+    const insights = document.getElementById("insightBox").innerText.trim() || "-";
+
+    let content = `
+        SKILLS INPUT:
+        ${skillsText}
+
+        \n
+
+        SUGGESTION:
+        ${suggestion}
+
+        \n
+
+        MORE INSIGHTS:
+        ${insights}
+        `;
+
+    const lines = pdf.splitTextToSize(content, 180);
+    pdf.text(lines, 10, 10);
+    pdf.save("skills-feedback.pdf");
+}
+
+
+
 </script>
 
 </body>

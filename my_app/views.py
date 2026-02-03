@@ -57,11 +57,22 @@ def generate_summary_suggestion(text_input, mode="rating"):
         else:
             prompt = f"""
                 You are a professional resume reviewer.
+        
+                Strict rules:
+                - Output ONLY bullet points
+                - Each line MUST start with: • (bullet symbol)
+                - Do NOT use *, -, numbers, or headings
+                - No extra text before or after bullets
+
 
                 Do ONLY these:
                 2. Say if the summary is generic
                 3. Suggest improvements (bullet points)
-
+                
+                Output format:
+                    • sentence
+                    • sentence
+                    • sentence
                 Resume summary:
                 {text_input}
                 give me without any subheading instade provide bulets
@@ -102,13 +113,14 @@ def generate_skills_suggestion(skills_input, mode="rating"):
         if mode == "rating":
             prompt = f"""
             You are a global career advisor and hiring expert.
-
+            
             ONLY do this:
             1. Evaluate the given skills based on current global job market trends.
             3. Provide ONE motivating feedback line with relivant positions they can apply.
 
             Output format (strict):
              sort feedback
+
 
             Skills:
             {skills_input}
@@ -122,10 +134,14 @@ def generate_skills_suggestion(skills_input, mode="rating"):
             - Identify gaps or outdated skills
             - Suggest high-impact skills to add
             - Give motivating, career-oriented guidance
+            Strict rules:
+            - Output ONLY bullet points
+            - Each line MUST start with: • (bullet symbol)
+            - Do NOT use *, -, numbers, or headings
+            - No extra text before or after bullets
 
             Rules:
             - NO subheadings
-            - ONLY bullet points
             - Be concise but impactful
 
             Skills:
@@ -233,7 +249,7 @@ def export_users_csv(request):
             elif col == "skills":
                 row.append(ua.skills if ua and ua.skills else "-")
             elif col == "additional_skills":
-                row.append(ua.additional_skills if ua and ua.skills else "-")
+                row.append(ua.additional_skills if ua and ua.additional_skills else "-")
 
         writer.writerow(row)
 

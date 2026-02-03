@@ -10,7 +10,7 @@
     <form id="exportForm" method="POST" action="{% url 'export_users_csv' %}">
     {% csrf_token %}
 
-    <div>
+    <!-- <div>
         <h5>Column choice:</h5>
         <label><input type="checkbox" name="columns" value="name" checked> Name</label>
         <label><input type="checkbox" name="columns" value="email" checked> Email</label>
@@ -21,7 +21,7 @@
         <label><input type="checkbox" name="columns" value="skills"> Skills</label>
         <label><input type="checkbox" name="columns" value="additional_skills"> Additional Skills</label>
 
-    </div>
+    </div> -->
 
     <br>
 
@@ -36,14 +36,14 @@
         <tr>
             <th></th>
             <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Location</th>
-            <th>Gender</th>
-            <th>College</th>
-            <th>CGPA</th>
-            <th>Skills</th>
-            <th>Additional Skills</th>
+            <th><label><input type="checkbox" name="columns" value="name" checked> Name</label></th>
+            <th><input type="checkbox" name="columns" value="email" checked> Email</th>
+            <th><input type="checkbox" name="columns" value="location"> Location</th>
+            <th><input type="checkbox" name="columns" value="gender"> Gender</th>
+            <th><input type="checkbox" name="columns" value="college"> College</th>
+            <th><input type="checkbox" name="columns" value="cgpa"> CGPA</th>
+            <th><input type="checkbox" name="columns" value="skills"> Skills</th>
+            <th><input type="checkbox" name="columns" value="additional_skills"> Additional Skills</th>
 
         </tr>
     </thead>

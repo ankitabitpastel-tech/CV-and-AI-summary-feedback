@@ -53,6 +53,36 @@
         h2{
             color: #594abb;
         }
+        #loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+
+            background: rgba(255, 255, 255, 0.6); /* soft blur feel */
+            backdrop-filter: blur(2px);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            z-index: 9999;
+    }
+    .loader {
+        width: 56px;
+        height: 56px;
+        border: 5px solid #d6e3f7;
+        border-top: 5px solid #594abb;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
     </style>
 </head>
 <body>
@@ -76,8 +106,7 @@
             margin-top: 20px;
             border-radius: 6px;-->
         <textarea 
-            id="summaryText"
-            placeholder="Paste your resume summary here..."></textarea>
+            id="summaryText"></textarea>
 
         <br><br>
 
@@ -86,8 +115,11 @@
 
         <div class="result" id="ratingBox" style="display:none;"></div>
         <div class="result" id="insightBox" style="display:none;"></div>
-        <div id="loader" style="display:none; margin-top:10px;">
+        <!-- <div id="loader" style="display:none; margin-top:10px;">
             Getting response…
+        </div> -->
+        <div id="loader-overlay" style="display:none;">
+            <div class="loader"></div>
         </div>
 
     <!-- </form> -->
@@ -102,12 +134,35 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- jQuery (required) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Summernote CSS -->
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+
+<!-- Summernote JS -->
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
 
 <script>
+
+    $(document).ready(function () {
+    $('#summaryText').summernote({
+        placeholder: 'Paste your resume summary here...',
+        height: 160,
+        toolbar: [
+            ['style', ['bold', 'italic', 'underline']],
+            ['para', ['ul', 'ol']],
+            ['insert', ['link']],
+            ['view', ['codeview']]
+        ]
+    });
+});
 const csrfToken = "{{ csrf_token }}";
 
 function postData(mode) {
-    document.getElementById('loader').style.display='block';
+    // document.getElementById('loader').style.display='block';
+    document.getElementById("loader-overlay").style.display = "flex";
+
     fetch("{% url 'summary_suggestion' %}", {
         method: "POST",
         headers: {
@@ -116,13 +171,17 @@ function postData(mode) {
 
         },
         body: new URLSearchParams({
-            summary_text: document.getElementById("summaryText").value,
+            // summary_text: document.getElementById("summaryText").value,
+            summary_text: $('#summaryText').summernote('code'),
+
             mode: mode
         })
     })
     .then(res => res.json())
     .then(data => {
-        document.getElementById('loader').style.display='none';
+        // document.getElementById('loader').style.display='none';
+        document.getElementById("loader-overlay").style.display = "none";
+
 
         if (mode === "rating") {
             document.getElementById("ratingBox").innerText = data.result;
@@ -205,17 +264,26 @@ function downloadPDF() {
     pdf.save("summary.pdf");
     
 }
+// function clearResults(){
+//     document.getElementById("ratingBox").innerText = "";
+//         document.getElementById("ratingBox").style.display = "none";
+
+//         document.getElementById("insightBox").innerText = "";
+//         document.getElementById("insightBox").style.display = "none";
+
+//         document.getElementById("moreBtn").style.display = "none";
+// }
 function clearResults(){
-    document.getElementById("ratingBox").innerText = "";
-        document.getElementById("ratingBox").style.display = "none";
+    $('#summaryText').summernote('reset');
 
-        document.getElementById("insightBox").innerText = "";
-        document.getElementById("insightBox").style.display = "none";
-
-        document.getElementById("moreBtn").style.display = "none";
+    document.getElementById("ratingBox").style.display = "none";
+    document.getElementById("insightBox").style.display = "none";
+    document.getElementById("moreBtn").style.display = "none";
 }
+
 document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("loader").style.display = "none";
+    // document.getElementById("loader").style.display = "none";
+    document.getElementById("loader-overlay").style.display = "none";
     const summaryInput = document.getElementById("summaryText");
 
     // summaryInput.addEventListener("input", () => {

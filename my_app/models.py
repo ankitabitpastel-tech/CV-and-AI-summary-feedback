@@ -64,7 +64,7 @@ class UserAdditionals(models.Model):
 
     skills = models.JSONField(null=True, blank=True)
 
-    certificate_url = models.TextField(null=True, blank=True)
+    # certificate_url = models.TextField(null=True, blank=True)
 
     additional_skills = models.JSONField(null=True, blank=True)
 

@@ -1,5 +1,5 @@
 from django.http import Http404, JsonResponse, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.conf import settings
 from .models import *
 # from openai import OpenAI
@@ -10,7 +10,97 @@ import google.generativeai as genai
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 import csv
+import json
 # from .models import User, UserAdditionals
+from django.contrib.auth.hashers import make_password, check_password
+from django.db.models import Q
+
+
+def welcome(request):
+    return render(request, "auth/welcome.html")
+
+
+def signup(request):
+
+    if request.method == "POST":
+
+        data = json.loads(request.body)
+
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+        email = data.get("email")
+        username = data.get("username")
+        password = data.get("password")
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({"error": "Username already exists"})
+
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({"error": "Email already exists"})
+
+        User.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            username=username,
+            password_hash=make_password(password)
+        )
+        return JsonResponse({
+            "success": True,
+            "redirect": "/login"
+        })
+
+    return render(request, "auth/signup.html")
+
+
+def login(request):
+
+    if request.method == "POST":
+
+        data = json.loads(request.body)
+
+        username = data.get("username")
+        password = data.get("password")
+
+        try:
+            user = User.objects.get(
+                Q(username=username) | Q(email=username)
+            )
+
+            if check_password(password, user.password_hash):
+
+                request.session["user_id"] = user.id
+
+                return JsonResponse({
+                    "success": True,
+                    "redirect": "/dashboard"
+                })
+
+            return JsonResponse({"error": "Wrong password"})
+
+        except User.DoesNotExist:
+            return JsonResponse({"error": "User not found"})
+
+    return render(request, "auth/login.html")
+
+def dashboard(request):
+
+    user_id = request.session.get("user_id")
+
+    if not user_id:
+        return redirect("/login")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        request.session.flush()
+        return redirect("/login")
+
+    return render(request, "auth/dashboard.html", {"user": user, "user_id": user_id})
+
+def logout(request):
+    request.session.flush()
+    return redirect("/login")
 
 
 def user_resume_view(request, id):

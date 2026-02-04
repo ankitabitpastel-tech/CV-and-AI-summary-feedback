@@ -28,9 +28,6 @@ class User(models.Model):
     def __str__(self):
         return self.email
 
-from django.db import models
-from django.utils import timezone
-
 
 class UserAdditionals(models.Model):
     id = models.BigAutoField(primary_key=True)

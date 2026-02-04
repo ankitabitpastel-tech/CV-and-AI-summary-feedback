@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signup</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 320px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+        }
+
+        button {
+            background: #9fc4e6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        a {
+            color: #594abb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>Signup</h2>
+
+    <input id="first_name" placeholder="First Name">
+    <input id="last_name" placeholder="Last Name">
+    <input id="email" placeholder="Email">
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+
+    <button onclick="signupUser()">Signup</button>
+
+    <div class="link">
+        Already have an account? <a href="/login">Login</a>
+    </div>
+
+    <p id="msg"></p>
+
+</div>
+
+
+<script>
+function signupUser(){
+
+    fetch("/signup", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({
+            first_name: first_name.value,
+            last_name: last_name.value,
+            email: email.value,
+            username: username.value,
+            password: password.value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("msg").innerText =
+            data.message || data.error;
+    });
+}
+
+function getCSRFToken(){
+    return document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='))
+      ?.split('=')[1];
+}
+</script>
+
+</body>
+</html>

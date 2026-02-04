@@ -240,42 +240,88 @@ function downloadImage() {
 // }
 
 
+// function downloadPDF() {
+//     const jsPDF = window.jspdf.jsPDF;
+//     const pdf = new jsPDF();
+
+//     const rawSummary = document.getElementById("summaryText").value;
+//     const summary = rawSummary.trim().length ? rawSummary.trim() : "-";
+
+
+//     // const summary = document.getElementById("summaryText").value.trim() || '-';
+//     const rating = document.getElementById("ratingBox").innerText.trim() || '-';
+//     const insights = document.getElementById("insightBox").innerText.trim() || '-';
+    
+//     const summaryText = $('<div>')
+//     .html($('#summaryText').summernote('code'))
+//     .text()
+//     .trim();
+
+
+//     let content = `
+//         SUMMARY INPUT: ${summaryText} 
+        
+//         \n
+//         RATING: ${rating} 
+        
+//         \n
+//         MORE INSIGHTS: ${insights} 
+        
+//             `;
+
+//     const lines = pdf.splitTextToSize(content, 180);
+
+//     pdf.text(lines, 10, 10);
+    
+//     pdf.save("summary.pdf");
+    
+// }
 function downloadPDF() {
     const jsPDF = window.jspdf.jsPDF;
-    const pdf = new jsPDF();
+    const pdf = new jsPDF("p", "mm", "a4");
 
-    const rawSummary = document.getElementById("summaryText").value;
-    const summary = rawSummary.trim().length ? rawSummary.trim() : "-";
+    const summaryHTML = $('#summaryText').summernote('code');
+    const summaryText = $('<div>')
+        .html(summaryHTML)
+        .text()
+        .trim() || '-';
 
-
-    // const summary = document.getElementById("summaryText").value.trim() || '-';
     const rating = document.getElementById("ratingBox").innerText.trim() || '-';
     const insights = document.getElementById("insightBox").innerText.trim() || '-';
-    
-    const summaryText = $('<div>')
-    .html($('#summaryText').summernote('code'))
-    .text()
-    .trim();
 
+    let y = 10;
 
-    let content = `
-        SUMMARY INPUT: ${summaryText} 
-        
-        \n
-        RATING: ${rating} 
-        
-        \n
-        MORE INSIGHTS: ${insights} 
-        
-            `;
+    pdf.text("SUMMARY INPUT:", 10, y);
+    y += 8;
 
-    const lines = pdf.splitTextToSize(content, 180);
+    pdf.splitTextToSize(summaryText, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
 
-    pdf.text(lines, 10, 10);
-    
+    y += 6;
+
+    pdf.text("RATING:", 10, y);
+    y += 8;
+
+    pdf.splitTextToSize(rating, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
+
+    y += 6;
+
+    pdf.text("MORE INSIGHTS:", 10, y);
+    y += 8;
+
+    pdf.splitTextToSize(insights, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
+
     pdf.save("summary.pdf");
-    
 }
+
 // function clearResults(){
 //     document.getElementById("ratingBox").innerText = "";
 //         document.getElementById("ratingBox").style.display = "none";

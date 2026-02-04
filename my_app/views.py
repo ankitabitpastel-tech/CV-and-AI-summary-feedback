@@ -14,7 +14,7 @@ import json
 # from .models import User, UserAdditionals
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
-
+from .decorators import login_required
 
 def welcome(request):
     return render(request, "auth/welcome.html")
@@ -83,6 +83,7 @@ def login(request):
 
     return render(request, "auth/login.html")
 
+@login_required
 def dashboard(request):
 
     user_id = request.session.get("user_id")
@@ -98,11 +99,12 @@ def dashboard(request):
 
     return render(request, "auth/dashboard.html", {"user": user, "user_id": user_id})
 
+@login_required
 def logout(request):
     request.session.flush()
     return redirect("/login")
 
-
+@login_required
 def user_resume_view(request, id):
     try:
 
@@ -122,12 +124,21 @@ def user_resume_view(request, id):
         print("Resume error:", e)
         raise Http404("Resume not found")
 
+@login_required
+def increment_usage(user: User, feedback_type: str):
+    usage = user.usage_count or {}
+    usage[feedback_type] = usage.get(feedback_type, 0) + 1
+
+    user.usage_count = usage
+    user.save(update_fields=['usage_count'])
+
 # client = OpenAI(api_key=settings.OPENAI_API_KEY)  
 
 # genai.configure(api_key=settings.API_KEY)
 # client = genai.Client(api_key=settings.API_KEY)
 genai.configure(api_key=settings.API_KEY)
 
+@login_required
 def generate_summary_suggestion(text_input, mode="rating"):
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -175,10 +186,12 @@ def generate_summary_suggestion(text_input, mode="rating"):
         print("Error generating feedback:", e)
         return None
 
+@login_required
 def summary_suggestion_view(request):
     # suggestion = None
     # text_input = ""
-
+    user_id = request.session.get("user_id")
+    user = get_object_or_404(User, id=user_id)
     if request.method == "POST":
         text_input = request.POST.get("summary_text", "").strip()
         mode= request.POST.get("mode", "ratting")
@@ -187,15 +200,17 @@ def summary_suggestion_view(request):
             return JsonResponse({"error": "Empty input"}, status=400)
             # suggestion = generate_summary_suggestion(text_input)
         result = generate_summary_suggestion(text_input, mode)
-
+        increment_usage(user, "summary")
         return JsonResponse({
-            'result':result
+            'result':result,
+            "summary_count": user.usage_count.get("summary", 0)
         })
     return render(
         request,
         "summary_suggestion.html"
     )
 
+@login_required
 def generate_skills_suggestion(skills_input, mode="rating"):
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -245,7 +260,10 @@ def generate_skills_suggestion(skills_input, mode="rating"):
         print("Error generating skills feedback:", e)
         return None
 
+@login_required
 def skills_suggestion_view(request):
+    user_id = request.session.get("user_id")
+    user = get_object_or_404(User, id=user_id)
     if request.method == "POST":
         skills_input = request.POST.get("skills_text", "").strip()
         mode = request.POST.get("mode", "rating")
@@ -254,9 +272,10 @@ def skills_suggestion_view(request):
             return JsonResponse({"error": "Empty input"}, status=400)
 
         result = generate_skills_suggestion(skills_input, mode)
-
+        increment_usage(user, "skills")
         return JsonResponse({
-            "result": result
+            "result": result,
+            "skills_count": user.usage_count.get("skills", 0)
         })
 
     return render(
@@ -264,6 +283,7 @@ def skills_suggestion_view(request):
         "skill_suggestion.html"
     )
 
+@login_required
 def user_list(request):
     users = User.objects.all()
     additionals_map = {
@@ -281,7 +301,7 @@ def user_list(request):
         'user_data':user_data
     })
 
-
+@login_required
 def export_users_csv(request):
     TABLE_COLUMNS = [
     "name",

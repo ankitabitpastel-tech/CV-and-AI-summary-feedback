@@ -16,8 +16,9 @@ class User(models.Model):
     profile_image = models.URLField(null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
-    is_verified = models.BooleanField(default=False)
-
+    # is_verified = models.BooleanField(default=False)
+    usage_count = models.JSONField(default=dict)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True, blank=True)
 
@@ -66,7 +67,6 @@ class UserAdditionals(models.Model):
     additional_skills = models.JSONField(null=True, blank=True)
 
     about = models.TextField(null=True, blank=True)
-
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(null=True, blank=True)
 

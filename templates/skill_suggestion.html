@@ -54,14 +54,14 @@
         h2{
             color: #594abb;
         }
-                #loader-overlay {
+            #loader-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
 
-            background: rgba(255, 255, 255, 0.6); /* soft blur feel */
+            background: rgba(255, 255, 255, 0.6); 
             backdrop-filter: blur(2px);
 
             display: flex;
@@ -93,6 +93,7 @@
     <br><br>
     <button type="button" onclick="downloadImage()">Download as Image</button>
     <button type="button" onclick="downloadPDF()">Download as PDF</button>
+
 
     <!-- <textarea
         id="skillsText"
@@ -207,38 +208,92 @@ function downloadImage() {
     });
 }
 
+// function downloadPDF() {
+//     const jsPDF = window.jspdf.jsPDF;
+//     const pdf = new jsPDF("p", "mm", "a4");
+
+//     // const skillsHTML = quill.root.innerHTML;
+//     const skillsHTML = $('#skillsText').summernote('code');
+//     const tempDiv = document.createElement("div");
+//     tempDiv.innerHTML = skillsHTML;
+    
+//     // const skillsText = tempDiv.innerText.trim() || "-";
+//     const skillsText = skillsHTML
+//         .replace(/<\/li>/g, '\n')
+//         .replace(/<[^>]+>/g, '')
+//         .trim() || "-";
+
+//     const suggestion = document.getElementById("ratingBox").innerText.trim() || "-";
+//     const insights = document.getElementById("insightBox").innerText.trim() || "-";
+    
+
+//     let content = `
+//         SKILLS INPUT:
+//         ${skillsText}
+
+//         \n
+
+//         SUGGESTION:
+//         ${suggestion}
+
+//         \n
+
+//         MORE INSIGHTS:
+//         ${insights}
+//         `;
+
+//     const lines = pdf.splitTextToSize(content, 180);
+//     pdf.text(lines, 10, 10);
+//     pdf.save("skills-feedback.pdf");
+// }
 function downloadPDF() {
     const jsPDF = window.jspdf.jsPDF;
     const pdf = new jsPDF("p", "mm", "a4");
 
-    // const skillsHTML = quill.root.innerHTML;
     const skillsHTML = $('#skillsText').summernote('code');
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = skillsHTML;
-    const skillsText = tempDiv.innerText.trim() || "-";
 
-    const suggestion = document.getElementById("ratingBox").innerText.trim() || "-";
-    const insights = document.getElementById("insightBox").innerText.trim() || "-";
+    // Convert Summernote HTML → bullet text
+    const skillsText = skillsHTML
+        .replace(/<\/li>/g, '\n')
+        .replace(/<li>/g, '• ')
+        .replace(/<[^>]+>/g, '')
+        .trim() || '-';
 
-    let content = `
-        SKILLS INPUT:
-        ${skillsText}
+    const suggestion = document.getElementById("ratingBox").innerText.trim() || '-';
+    const insights = document.getElementById("insightBox").innerText.trim() || '-';
 
-        \n
+    let y = 10;
 
-        SUGGESTION:
-        ${suggestion}
+    pdf.text("SKILLS INPUT:", 10, y);
+    y += 8;
 
-        \n
+    pdf.splitTextToSize(skillsText, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
 
-        MORE INSIGHTS:
-        ${insights}
-        `;
+    y += 6;
+    pdf.text("SUGGESTION:", 10, y);
+    y += 8;
 
-    const lines = pdf.splitTextToSize(content, 180);
-    pdf.text(lines, 10, 10);
+    pdf.splitTextToSize(suggestion, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
+
+    y += 6;
+    pdf.text("MORE INSIGHTS:", 10, y);
+    y += 8;
+
+    pdf.splitTextToSize(insights, 180).forEach(line => {
+        pdf.text(line, 10, y);
+        y += 6;
+    });
+
     pdf.save("skills-feedback.pdf");
 }
+
+
 function clearResults(){
     document.getElementById("ratingBox").innerText = "";
     document.getElementById("ratingBox").style.display = "none";

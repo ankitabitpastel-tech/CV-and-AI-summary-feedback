@@ -5,7 +5,8 @@ from .models import *
 
 # from openai import OpenAI
 from google import genai
-import google.generativeai as genai
+
+# import google.generativeai as genai
 
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
@@ -97,8 +98,12 @@ def dashboard(request):
     except User.DoesNotExist:
         request.session.flush()
         return redirect("/login")
+    usage = user.usage_count or {}
 
-    return render(request, "auth/dashboard.html", {"user": user, "user_id": user_id})
+    return render(request, "auth/dashboard.html", {
+        "user": user, "user_id": user_id, 
+        "summary_count": usage.get("summary", 0),
+        "skills_count": usage.get("skills", 0),})
 
 @login_required
 def logout(request):
@@ -125,21 +130,24 @@ def user_resume_view(request, id):
         print("Resume error:", e)
         raise Http404("Resume not found")
 
-@login_required
+# @login_required
 def increment_usage(user: User, feedback_type: str):
     usage = user.usage_count or {}
     usage[feedback_type] = usage.get(feedback_type, 0) + 1
+    # usage[feedback_type] += 1
 
     user.usage_count = usage
     user.save(update_fields=['usage_count'])
+    user.refresh_from_db()
+
+    return usage[feedback_type]
 
 # client = OpenAI(api_key=settings.OPENAI_API_KEY)  
-
 # genai.configure(api_key=settings.API_KEY)
-# client = genai.Client(api_key=settings.API_KEY)
-genai.configure(api_key=settings.API_KEY)
+client = genai.Client(api_key=settings.API_KEY)
+# genai.configure(api_key=settings.API_KEY)
 
-@login_required
+# @login_required
 def generate_summary_suggestion(text_input, mode="rating"):
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -195,23 +203,30 @@ def summary_suggestion_view(request):
     user = get_object_or_404(User, id=user_id)
     if request.method == "POST":
         text_input = request.POST.get("summary_text", "").strip()
-        mode= request.POST.get("mode", "ratting")
+        mode= request.POST.get("mode", "rating")
 
         if not text_input:
             return JsonResponse({"error": "Empty input"}, status=400)
+        count= increment_usage(user, "summary")
+        print('sammary',count)
+        
             # suggestion = generate_summary_suggestion(text_input)
-        result = generate_summary_suggestion(text_input, mode)
-        increment_usage(user, "summary")
+        try:
+            result = generate_summary_suggestion(text_input, mode)
+        except Exception as e:
+            print("AI ERROR:", e)
+            result = "AI service failed"
+        # result = generate_summary_suggestion(text_input, mode)
         return JsonResponse({
             'result':result,
-            "summary_count": user.usage_count.get("summary", 0)
+            "summary_count": count
         })
     return render(
         request,
         "summary_suggestion.html"
     )
 
-@login_required
+# @login_required
 def generate_skills_suggestion(skills_input, mode="rating"):
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -271,12 +286,16 @@ def skills_suggestion_view(request):
 
         if not skills_input:
             return JsonResponse({"error": "Empty input"}, status=400)
-
-        result = generate_skills_suggestion(skills_input, mode)
-        increment_usage(user, "skills")
+        count = increment_usage(user, "skills")
+        print('skill',count)
+        try:
+            result = generate_skills_suggestion(skills_input, mode)
+        except Exception as e:
+            print("AI ERROR:", e)
+            result = "AI service failed" 
         return JsonResponse({
             "result": result,
-            "skills_count": user.usage_count.get("skills", 0)
+            "skills_count": count
         })
 
     return render(

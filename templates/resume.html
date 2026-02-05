@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ user.first_name }} {{ user.last_name }} – Resume</title>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <style>
         body {
@@ -28,9 +29,46 @@
             margin: 8px 0;
             padding-left: 20px;
         }
+          .top-nav {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+
+    background: linear-gradient(135deg, #b097eb33 0%, #9fc4e666 100%);
+    border: 1px solid rgba(108, 117, 255, 0.35);
+    border-radius: 10px;
+
+    color: #3b3f8c;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.back-btn i {
+    font-size: 18px;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    color: #2a2e6e;
+}
     </style>
 </head>
 <body>
+<div class="top-nav">
+    <a href="{% url 'dashboard' %}" class="back-btn">
+        <i class="bi bi-house"></i>
+        Back to Dashboard
+    </a>
+</div>
 
     <!-- Header -->
     <h1>{{ user.first_name }} {{ user.last_name }}</h1>

@@ -2,8 +2,8 @@ from django.http import Http404, JsonResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.conf import settings
 from .models import *
+
 # from openai import OpenAI
-# import google.generativeai as genai
 from google import genai
 import google.generativeai as genai
 
@@ -14,12 +14,13 @@ import json
 # from .models import User, UserAdditionals
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
-from .decorators import login_required
+from .decorators import *
 
+@logout_required
 def welcome(request):
     return render(request, "auth/welcome.html")
 
-
+@logout_required
 def signup(request):
 
     if request.method == "POST":
@@ -52,7 +53,7 @@ def signup(request):
 
     return render(request, "auth/signup.html")
 
-
+@logout_required
 def login(request):
 
     if request.method == "POST":

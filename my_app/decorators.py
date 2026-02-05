@@ -11,3 +11,11 @@ def login_required(view_func):
             return redirect("/login")
         return view_func(request, *args, **kwargs)
     return wrapper
+
+def logout_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.session.get("user_id"):
+            return redirect("/dashboard")
+        return view_func(request, *args, **kwargs)
+    return wrapper

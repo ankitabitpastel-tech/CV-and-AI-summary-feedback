@@ -7,7 +7,7 @@ from .models import *
 from google import genai
 
 # import google.generativeai as genai
-
+from .forms import *
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 import csv
@@ -16,79 +16,130 @@ import json
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
 from .decorators import *
+import traceback
+from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import cache_control
+
+
 
 @logout_required
 def welcome(request):
     return render(request, "auth/welcome.html")
 
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @logout_required
 def signup(request):
 
     if request.method == "POST":
 
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+            form = SignupForm(data)
 
-        first_name = data.get("first_name")
-        last_name = data.get("last_name")
-        email = data.get("email")
-        username = data.get("username")
-        password = data.get("password")
+            if form.is_valid():
+                form.save()
 
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({"error": "Username already exists"})
+                return JsonResponse({
+                    "success": True,
+                    "redirect": "/login"
+                })
 
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({"error": "Email already exists"})
+            return JsonResponse({
+                "success": False,
+                "errors": form.errors.get_json_data()
+            })
 
-        User.objects.create(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            username=username,
-            password_hash=make_password(password)
-        )
-        return JsonResponse({
-            "success": True,
-            "redirect": "/login"
-        })
+        except Exception as e:
+            print("SIGNUP ERROR:", str(e))
+            traceback.print_exc()
+
+            return JsonResponse({
+                "success": False,
+                "error": "Server error"
+            })
 
     return render(request, "auth/signup.html")
 
+
+def validate_signup_field(request):
+
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({"errors": {}})
+
+    form = SignupForm(data)
+    form.is_valid()
+
+    return JsonResponse({
+        "errors": form.errors.get_json_data()
+    })
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @logout_required
 def login(request):
 
     if request.method == "POST":
 
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Invalid request"})
+        form = LoginForm(data)
 
-        username = data.get("username")
-        password = data.get("password")
+        if not form.is_valid():
+            return JsonResponse({
+                "success": False,
+                 "errors": form.errors.get_json_data()
+            })
+
+        username = form.cleaned_data["username"]
+        password = form.cleaned_data["password"]
 
         try:
             user = User.objects.get(
                 Q(username=username) | Q(email=username)
             )
 
-            if check_password(password, user.password_hash):
-
-                request.session["user_id"] = user.id
-
+            if not check_password(password, user.password_hash):
                 return JsonResponse({
-                    "success": True,
-                    "redirect": "/dashboard"
+                    "success": False,
+                    "message": "Wrong password"
                 })
 
-            return JsonResponse({"error": "Wrong password"})
+            request.session["user_id"] = user.id
+            request.session.set_expiry(60 * 60 * 24)
+
+            return JsonResponse({
+                "success": True,
+                "redirect": "/dashboard"
+            })
 
         except User.DoesNotExist:
-            return JsonResponse({"error": "User not found"})
+            return JsonResponse({
+                "success": False,
+                "message": "User not found"
+            })
 
     return render(request, "auth/login.html")
+def validate_login_field(request):
 
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        form = LoginForm(data)
+
+        form.is_valid()
+
+        return JsonResponse({
+            "errors": form.errors.get_json_data()
+        })
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @login_required
 def dashboard(request):
 
     user_id = request.session.get("user_id")
+    
 
     if not user_id:
         return redirect("/login")
@@ -105,6 +156,7 @@ def dashboard(request):
         "summary_count": usage.get("summary", 0),
         "skills_count": usage.get("skills", 0),})
 
+@never_cache
 @login_required
 def logout(request):
     request.session.flush()

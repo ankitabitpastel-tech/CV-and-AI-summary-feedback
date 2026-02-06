@@ -3,74 +3,128 @@
 <head>
     <title>Signup</title>
 
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
-        body {
-            font-family: Arial;
-            background: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        body{
+            background: linear-gradient(135deg,#b097eb3f,#9fc4e688);
+            height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
         }
 
-        .box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 320px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        .signup-card{
+            width:400px;
+            border-radius:15px;
+            box-shadow:0 8px 25px rgba(0,0,0,0.1);
         }
+        .toast-box{
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
 
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 12px;
-        }
+.toast-msg{
+    background: #333;
+    color: #fff;
+    padding: 12px 18px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: fadeIn 0.4s ease;
+}
 
-        button {
-            background: #9fc4e6;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+.toast-success{ background: #28a745; }
+.toast-error{ background: #dc3545; }
+.toast-info{ background: #17a2b8; }
 
-        .link {
-            text-align: center;
-            margin-top: 15px;
-        }
+@keyframes fadeIn{
+    from {opacity:0; transform:translateX(50px);}
+    to {opacity:1; transform:translateX(0);}
+}
 
-        a {
-            color: #594abb;
-            text-decoration: none;
-        }
     </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="card signup-card p-4">
+    <!-- Toast Container -->
+<div id="toastBox" class="toast-box"></div>
+    <h3 class="text-center mb-3">Create Account</h3>
 
-    <h2>Signup</h2>
+    <!-- <form method="POST" action="{% url 'signup' %}"> -->
+    
+<form id="signupForm" onsubmit="event.preventDefault(); signupUser();">
+{% csrf_token %}
 
-    <input id="first_name" placeholder="First Name">
-    <input id="last_name" placeholder="Last Name">
-    <input id="email" placeholder="Email">
-    <input id="username" placeholder="Username">
-    <input id="password" type="password" placeholder="Password">
+<!-- FIRST NAME -->
+<div class="mb-3">
+<label>First Name *</label>
+<input id="first_name" class="form-control">
+<div class="invalid-feedback" id="first_name_error"></div>
+</div>
 
-    <button onclick="signupUser()">Signup</button>
+<!-- LAST NAME -->
+<div class="mb-3">
+<label>Last Name</label>
+<input id="last_name" class="form-control">
+<div class="invalid-feedback" id="last_name_error"></div>
+</div>
 
-    <div class="link">
-        Already have an account? <a href="/login">Login</a>
-    </div>
+<!-- EMAIL -->
+<div class="mb-3">
+<label>Email *</label>
+<input id="email" type="email" class="form-control">
+<div class="invalid-feedback" id="email_error"></div>
+</div>
 
-    <p id="msg"></p>
+<!-- USERNAME -->
+<div class="mb-3">
+<label>Username *</label>
+<input id="username" class="form-control">
+<div class="invalid-feedback" id="username_error"></div>
+</div>
+
+<!-- PASSWORD -->
+<div class="mb-3">
+<label>Password *</label>
+<input id="password" type="password" class="form-control">
+<div class="invalid-feedback" id="password_error"></div>
+</div>
+
+<!-- CONFIRM -->
+<div class="mb-3">
+<label>Confirm Password *</label>
+<input id="confirm_password" type="password" class="form-control">
+<div class="invalid-feedback" id="confirm_password_error"></div>
+</div>
+
+<button class="btn btn-primary w-100">
+Signup
+</button>
+
+</form>
+
+
+    <p class="text-center mt-3">
+        Already have an account?
+        <a href="/login">Login</a>
+    </p>
+
+    <div id="msg"></div>
 
 </div>
 
-
 <script>
-function signupUser(){
+
+function signupUser() {
+
+    clearErrors();
 
     fetch("/signup", {
         method: "POST",
@@ -79,17 +133,67 @@ function signupUser(){
             "X-CSRFToken": getCSRFToken()
         },
         body: JSON.stringify({
-            first_name: first_name.value,
-            last_name: last_name.value,
-            email: email.value,
-            username: username.value,
-            password: password.value
+            first_name: document.getElementById("first_name").value,
+            last_name: document.getElementById("last_name").value,
+            email: document.getElementById("email").value,
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+            confirm_password: document.getElementById("confirm_password").value
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+
+        if (!res.ok) {
+            throw new Error("Server error");
+        }
+
+        return res.json();
+    })
     .then(data => {
-        document.getElementById("msg").innerText =
-            data.message || data.error;
+
+        // if (data.success) {
+        //     window.location.href = data.redirect;
+        if (data.success) {
+
+            showToast("User created successfully");
+
+                setTimeout(()=>{
+                    window.location.href = data.redirect;
+                },1500);
+
+        }
+        else if (data.errors) {
+            showErrors(data.errors);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Something went wrong");
+    });
+}
+
+function showErrors(errors) {
+
+    Object.keys(errors).forEach(field => {
+
+        let input = document.getElementById(field);
+        let errorBox = document.getElementById(field + "_error");
+
+        if (input && errorBox) {
+
+            input.classList.add("is-invalid");
+            errorBox.innerText = errors[field][0].message;
+        }
+    });
+}
+function clearErrors() {
+
+    document.querySelectorAll(".form-control").forEach(el => {
+        el.classList.remove("is-invalid");
+    });
+
+    document.querySelectorAll(".invalid-feedback").forEach(el => {
+        el.innerText = "";
     });
 }
 
@@ -99,6 +203,115 @@ function getCSRFToken(){
       .find(row => row.startsWith('csrftoken='))
       ?.split('=')[1];
 }
+
+["first_name","last_name","email","username","password","confirm_password"]
+.forEach(field => {
+
+    document.getElementById(field).addEventListener("blur", function(){
+        validateSignup(field);
+    });
+});
+
+// function validateSignup(activeField){
+
+//     fetch("/validate-signup-field", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json",
+//             "X-CSRFToken": getCSRFToken()
+//         },
+//         body: JSON.stringify({
+//             first_name: document.getElementById("first_name").value,
+//             last_name: document.getElementById("last_name").value,
+//             email: document.getElementById("email").value,
+//             username: document.getElementById("username").value,
+//             password: document.getElementById("password").value,
+//             confirm_password: document.getElementById("confirm_password").value
+//         })
+//     })
+//     .then(res => res.json())
+//     .then(data => {
+
+//         clearErrors();
+
+//         if(data.errors){
+//             showErrors(data.errors);
+//         }
+
+//     });
+// }
+
+function showFieldError(field, message){
+
+    let input = document.getElementById(field);
+    let errorBox = document.getElementById(field + "_error");
+
+    if(input){
+        input.classList.add("is-invalid");
+    }
+
+    if(errorBox){
+        errorBox.innerText = message;
+    }
+}
+
+function clearFieldError(field){
+
+    let input = document.getElementById(field);
+    let errorBox = document.getElementById(field + "_error");
+
+    if(input){
+        input.classList.remove("is-invalid");
+    }
+
+    if(errorBox){
+        errorBox.innerText = "";
+    }
+}
+function validateSignup(activeField){
+
+    let payload = {
+        first_name: document.getElementById("first_name").value,
+        last_name: document.getElementById("last_name").value,
+        email: document.getElementById("email").value,
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value,
+        confirm_password: document.getElementById("confirm_password").value
+    };
+
+    fetch("/validate-signup-field", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        clearFieldError(activeField);
+
+        if(data.errors && data.errors[activeField]){
+            showFieldError(activeField, data.errors[activeField][0].message);
+        }
+
+    });
+}
+
+function showToast(message, type="success"){
+
+    let toast = document.createElement("div");
+    toast.className = "toast-msg toast-" + type;
+    toast.innerText = message;
+
+    document.getElementById("toastBox").appendChild(toast);
+
+    setTimeout(()=>{
+        toast.remove();
+    },3000);
+}
+
 </script>
 
 </body>

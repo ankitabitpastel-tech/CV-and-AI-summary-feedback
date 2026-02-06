@@ -3,78 +3,137 @@
 <head>
     <title>Login</title>
 
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
     <style>
-        body {
-            font-family: Arial;
-            background: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+
+        body{
+            background: linear-gradient(135deg,#b097eb3f,#9fc4e688);
+            height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
         }
 
-        .box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 320px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        .login-card{
+            width:380px;
+            border-radius:18px;
+            box-shadow:0 10px 30px rgba(0,0,0,0.12);
+            animation: fadeIn 0.6s ease-in-out;
         }
 
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 12px;
+        @keyframes fadeIn{
+            from{opacity:0; transform:translateY(15px);}
+            to{opacity:1; transform:translateY(0);}
         }
 
-        button {
-            background: #594abb;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        .error{
+            color:red;
+            font-size:13px;
         }
 
-        .link {
-            text-align: center;
-            margin-top: 15px;
+        .password-toggle{
+            cursor:pointer;
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            color:#777;
         }
 
-        a {
-            color: #594abb;
-            text-decoration: none;
+        .input-group{
+            position:relative;
         }
+        .toast-box{
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast-msg{
+    background: #333;
+    color: #fff;
+    padding: 12px 18px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: fadeToast 0.4s ease;
+}
+
+.toast-success{ background: #28a745; }
+.toast-error{ background: #dc3545; }
+.toast-info{ background: #17a2b8; }
+
+@keyframes fadeToast{
+    from {opacity:0; transform:translateX(50px);}
+    to {opacity:1; transform:translateX(0);}
+}
+
+
     </style>
 </head>
 
 <body>
 
-<div class="box">
-
-    <h2>Login</h2>
+<div class="card login-card p-4">
+    <div id="toastBox" class="toast-box"></div>
+    <h3 class="text-center mb-3 fw-bold">Welcome Back</h3>
 
     <form id="loginForm">
 
-    <input type="text" id="username" placeholder="Username/email">
-    <input type="password" id="password" placeholder="Password">
+        <!-- Username -->
+        <div class="mb-3">
+            <label class="form-label">Username or Email <span class="text-danger">*</span></label>
+            <input type="text" id="username" class="form-control">
+            <div class="error" id="username_error"></div>
+        </div>
 
-    <button type="submit">Login</button>
+        <!-- Password -->
+        <div class="mb-3">
+            <label class="form-label">Password <span class="text-danger">*</span></label>
 
-</form>
+            <div class="input-group">
+                <input type="password" id="password" class="form-control">
 
-    <div class="link">
-        No account? <a href="/signup">Signup</a>
-    </div>
+                <span class="password-toggle" onclick="togglePassword()">
+                    <i id="toggleIcon" class="fa fa-eye"></i>
+                </span>
+            </div>
 
-    <p id="msg"></p>
+            <div class="error" id="password_error"></div>
+        </div>
+
+        <button id="loginBtn" class="btn btn-primary w-100">
+            Login
+        </button>
+
+    </form>
+
+    <p class="text-center mt-3 mb-0">
+        Don't have account?
+        <a href="/signup">Signup</a>
+    </p>
+
+    <p id="msg" class="text-center text-danger mt-2"></p>
 
 </div>
 
-
 <script>
+
 document.getElementById("loginForm").onsubmit = function(e){
 
     e.preventDefault();
+    clearErrors();
+
+    const btn = document.getElementById("loginBtn");
+    btn.innerHTML = "Logging in...";
+    btn.disabled = true;
 
     fetch("/login", {
         method: "POST",
@@ -90,14 +149,72 @@ document.getElementById("loginForm").onsubmit = function(e){
     .then(res => res.json())
     .then(data => {
 
+        btn.innerHTML = "Login";
+        btn.disabled = false;
+
+        // if(data.success){
+        //     window.location.href = data.redirect;
+        // }
         if(data.success){
-            window.location.href = data.redirect;   
+
+            showToast("Login successful");
+
+            setTimeout(()=>{
+                window.location.href = data.redirect;
+            },1500);
         }
+        // else if(data.errors){
+        //     document.getElementById("msg").innerText = data.message;
+        // }
+        else if(data.errors){
+            showErrors(data.errors);
+    }
         else{
-            document.getElementById("msg").innerText = data.error;
+            document.getElementById("msg").innerText = "Login failed";
         }
 
+    })
+    .catch(()=>{
+        btn.innerHTML = "Login";
+        btn.disabled = false;
+        document.getElementById("msg").innerText = "Server error";
     });
+
+}
+
+
+function showErrors(errors){
+
+    Object.keys(errors).forEach(field => {
+
+        let box = document.getElementById(field + "_error");
+
+        if(box){
+            box.innerText = errors[field][0].message;
+        }
+    });
+}
+
+
+function clearErrors(){
+    document.querySelectorAll(".error").forEach(el => el.innerText = "");
+    document.getElementById("msg").innerText = "";
+}
+
+
+function togglePassword(){
+
+    const input = document.getElementById("password");
+    const icon = document.getElementById("toggleIcon");
+
+    if(input.type === "password"){
+        input.type = "text";
+        icon.classList.replace("fa-eye","fa-eye-slash");
+    }
+    else{
+        input.type = "password";
+        icon.classList.replace("fa-eye-slash","fa-eye");
+    }
 }
 
 
@@ -106,6 +223,53 @@ function getCSRFToken(){
       .split('; ')
       .find(row => row.startsWith('csrftoken='))
       ?.split('=')[1];
+}
+
+document.getElementById("username").addEventListener("blur", function(){
+
+    validateField();
+});
+
+document.getElementById("password").addEventListener("blur", function(){
+
+    validateField();
+});
+function validateField(){
+
+    fetch("/validate-login-field", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        clearErrors();
+
+        if(data.errors){
+            showErrors(data.errors);
+        }
+
+    });
+}
+
+function showToast(message, type="success"){
+
+    let toast = document.createElement("div");
+    toast.className = "toast-msg toast-" + type;
+    toast.innerText = message;
+
+    document.getElementById("toastBox").appendChild(toast);
+
+    setTimeout(()=>{
+        toast.remove();
+    },3000);
 }
 
 </script>

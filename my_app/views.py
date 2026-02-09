@@ -24,7 +24,7 @@ from django.core.mail import send_mail
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from django.conf import settings
-
+from django.db.models import OuterRef, Subquery
 
 def send_welcome_email(user):
 
@@ -99,19 +99,40 @@ def signup(request):
     return render(request, "auth/signup.html")
 
 
-def validate_signup_field(request):
+# def validate_signup_field(request):
 
+#     try:
+#         data = json.loads(request.body)
+#     except:
+#         return JsonResponse({"errors": {}})
+
+#     form = SignupForm(data)
+#     form.is_valid()
+
+#     return JsonResponse({
+#         "errors": form.errors.get_json_data()
+#     })
+
+def validate_signup_field(request):
     try:
         data = json.loads(request.body)
     except:
         return JsonResponse({"errors": {}})
 
-    form = SignupForm(data)
+    field_name = data.get("field")
+    field_value = data.get("value")
+
+    form = SignupForm({field_name: field_value})
     form.is_valid()
 
+    field_errors = form.errors.get_json_data().get(field_name, [])
+
     return JsonResponse({
-        "errors": form.errors.get_json_data()
+        "errors": {
+            field_name: field_errors
+        }
     })
+
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @logout_required
@@ -172,6 +193,8 @@ def validate_login_field(request):
         return JsonResponse({
             "errors": form.errors.get_json_data()
         })
+    
+
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @login_required
 def dashboard(request):
@@ -423,8 +446,8 @@ def skills_suggestion_view(request):
 #         'user_data':user_data
 #     })
 
-from django.db.models import OuterRef, Subquery, Value
-from django.db.models.functions import Coalesce
+
+
 @login_required
 def user_list(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':

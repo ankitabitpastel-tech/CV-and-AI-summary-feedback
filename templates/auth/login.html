@@ -169,8 +169,9 @@ document.getElementById("loginForm").onsubmit = function(e){
         else if(data.errors){
             showErrors(data.errors);
     }
+        
         else{
-            document.getElementById("msg").innerText = "Login failed";
+            showToast("Login failed", "error");
         }
 
     })

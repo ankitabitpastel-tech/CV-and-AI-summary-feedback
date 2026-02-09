@@ -6,6 +6,9 @@
     <title>Document</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
 
 </head>
 <body>
@@ -86,17 +89,38 @@ button{
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     color: #2a2e6e;
 }
+table.dataTable {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: 8px;
+    padding: 5px 10px;
+}
+
+
+.dataTables_wrapper .dataTables_length select {
+    min-width: 70px;
+    padding: 5px 30px 5px 10px;
+    border-radius: 8px;
+}
+
+
 </style>
 
-    <div class="bg">
+    <!-- <div class="bg"> -->
+
+    
 <div class="top-nav">
     <a href="{% url 'dashboard' %}" class="back-btn">
         <i class="bi bi-house"></i>
         Back to Dashboard
     </a>
 </div>
-
-    
+<br>
+<div class="container mt-4">
+<div class="bg shadow-sm">  
 
     <form id="exportForm" method="POST" action="{% url 'export_users_csv' %}">
     {% csrf_token %}
@@ -122,10 +146,13 @@ button{
         Export All
     </button>
 
-    <table class="table table-bordered table-hover align-middle">
+    <!-- <table class="table table-bordered table-hover align-middle"> -->
+    <table id="usersTable" class="table table-bordered table-hover align-middle">
+
     <thead class="table-light">
         <tr>
             <th><input type="checkbox" id="selectAll"></th>
+            
             <th>ID</th>
             <th><label><input type="checkbox" name="columns" value="name" checked> Name</label></th>
             <th><input type="checkbox" name="columns" value="email" checked> Email</th>
@@ -138,7 +165,7 @@ button{
 
         </tr>
     </thead>
-    <tbody>
+    <!-- <tbody>
         {% for row in user_data %}
         <tr>
             <td><input type="checkbox" name="user_ids" value="{{ row.user.id }}"></td>
@@ -167,10 +194,13 @@ button{
             </td>
         </tr>
         {% endfor %}
-    </tbody>
+    </tbody> -->
+    <tbody></tbody>
 </table>
 </form>
 </div>
+</div>
+
 <!-- <script>
 document.querySelector('[value="all"]').addEventListener("click", function () {
     document.querySelectorAll('input[name="columns"]').forEach(cb => {
@@ -178,24 +208,75 @@ document.querySelector('[value="all"]').addEventListener("click", function () {
     });
 });
 </script> -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+// document.addEventListener("DOMContentLoaded", function () {
+
+//     const selectAll = document.getElementById("selectAll");
+//     const rows = document.querySelectorAll('input[name="user_ids"]');
+
+//     selectAll.addEventListener("change", function () {
+//         rows.forEach(cb => cb.checked = this.checked);
+//     });
+
+//     rows.forEach(cb => {
+//         cb.addEventListener("change", function () {
+//             selectAll.checked = [...rows].every(r => r.checked);
+//         });
+//     });
+
+// });
+
+</script>
+<script>
+$(document).ready(function () {
+    $('#usersTable').on('draw.dt', function () {
 
     const selectAll = document.getElementById("selectAll");
+
     const rows = document.querySelectorAll('input[name="user_ids"]');
 
     selectAll.addEventListener("change", function () {
         rows.forEach(cb => cb.checked = this.checked);
     });
 
-    rows.forEach(cb => {
-        cb.addEventListener("change", function () {
-            selectAll.checked = [...rows].every(r => r.checked);
-        });
+});
+
+    $('#usersTable').DataTable({
+        processing: true,
+        serverSide: true,
+        order: [[1, "asc"]],
+        // dom:
+        //     "<'row mb-3'<'col-md-6'l><'col-md-6 text-end'f>>" +
+        //     "<'row'<'col-12'tr>>" +
+        //     "<'row mt-3'<'col-md-5'i><'col-md-7'p>>",
+        ajax: {
+            url: "{% url 'user_list' %}",
+            type: "GET"
+        },
+
+        columns: [
+            {
+                data: "checkbox",
+                orderable: false,
+                searchable: false
+            },
+            { data: "id" },
+            { data: "name" },
+            { data: "email" },
+            { data: "location" },
+            { data: "gender" },
+            { data: "college" },
+            { data: "cgpa" },
+            { data: "skills" },
+            { data: "additional_skills" }
+        ]
     });
 
 });
-
 </script>
 
 

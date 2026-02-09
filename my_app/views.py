@@ -19,8 +19,40 @@ from .decorators import *
 import traceback
 from django.views.decorators.cache import never_cache
 from django.views.decorators.cache import cache_control
+from django.core.mail import send_mail
+
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+from django.conf import settings
 
 
+def send_welcome_email(user):
+
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+        sib_api_v3_sdk.ApiClient(configuration)
+    )
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": user.email, "name": user.first_name}],
+        sender={"email": settings.DEFAULT_FROM_EMAIL, "name": "Job Finder"},
+        subject="Welcome to Job Finder 🎉",
+        html_content=f"""
+            <h2>Welcome {user.first_name} 👋</h2>
+            <p>Thanks for joining Job Finder.</p>
+            <p>We are happy to have you onboard.</p>
+            <br>
+            <p>Regards,</p>
+            <p><b>Team Job Finder</b></p>
+        """
+    )
+
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+    except ApiException as e:
+        print("Brevo API Error:", e)
 
 @logout_required
 def welcome(request):
@@ -37,7 +69,13 @@ def signup(request):
             form = SignupForm(data)
 
             if form.is_valid():
-                form.save()
+                user=form.save()
+                print("FROM EMAIL:", settings.DEFAULT_FROM_EMAIL)
+                try:
+                    send_welcome_email(user)
+
+                except Exception as e:
+                    print("Email failed:", e)
 
                 return JsonResponse({
                     "success": True,
@@ -259,15 +297,20 @@ def summary_suggestion_view(request):
 
         if not text_input:
             return JsonResponse({"error": "Empty input"}, status=400)
-        count= increment_usage(user, "summary")
-        print('sammary',count)
+        
         
             # suggestion = generate_summary_suggestion(text_input)
         try:
             result = generate_summary_suggestion(text_input, mode)
+            if result :
+                count= increment_usage(user, "summary")
+                print('sammary',count)
         except Exception as e:
             print("AI ERROR:", e)
-            result = "AI service failed"
+
+            return JsonResponse({
+                "error": "AI service is currently unavailable. Please try again later."
+            }, status=503)
         # result = generate_summary_suggestion(text_input, mode)
         return JsonResponse({
             'result':result,
@@ -338,13 +381,19 @@ def skills_suggestion_view(request):
 
         if not skills_input:
             return JsonResponse({"error": "Empty input"}, status=400)
-        count = increment_usage(user, "skills")
-        print('skill',count)
+        
         try:
             result = generate_skills_suggestion(skills_input, mode)
+            if result :
+                count = increment_usage(user, "skills")
+                print('skill',count)
         except Exception as e:
+            
             print("AI ERROR:", e)
-            result = "AI service failed" 
+            # result = "AI service failed" 
+            return JsonResponse({
+                "error": "AI service is currently unavailable. Please try again later."
+            }, status=503)
         return JsonResponse({
             "result": result,
             "skills_count": count
@@ -355,23 +404,117 @@ def skills_suggestion_view(request):
         "skill_suggestion.html"
     )
 
+# @login_required
+# def user_list(request):
+#     current_user=request.session.get('user_id')
+#     users = User.objects.exclude(id=current_user)
+#     additionals_map = {
+#         int(ua.user_id) :ua
+#         for ua in UserAdditionals.objects.all()
+
+#     }
+#     user_data = []
+#     for user in users:
+#         user_data.append({
+#             'user': user,
+#             'additionals': additionals_map.get(user.id)
+#         })
+#     return render(request, 'user_list.html' ,{
+#         'user_data':user_data
+#     })
+
+from django.db.models import OuterRef, Subquery, Value
+from django.db.models.functions import Coalesce
 @login_required
 def user_list(request):
-    users = User.objects.all()
-    additionals_map = {
-        int(ua.user_id) :ua
-        for ua in UserAdditionals.objects.all()
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            
+        draw = int(request.GET.get("draw", 1))
+        start = int(request.GET.get("start", 0))
+        length = int(request.GET.get("length", 10))
+        search_value = request.GET.get("search[value]", "")
 
-    }
-    user_data = []
-    for user in users:
-        user_data.append({
-            'user': user,
-            'additionals': additionals_map.get(user.id)
+        order_column_index = request.GET.get("order[0][column]", "1")
+        order_dir = request.GET.get("order[0][dir]", "asc")
+
+        current_user = request.session.get("user_id")
+
+        additionals = UserAdditionals.objects.filter(
+            user_id=OuterRef("id")
+        )
+
+        queryset = User.objects.exclude(id=current_user).annotate(
+
+            location=Subquery(additionals.values("location")[:1]),
+            gender=Subquery(additionals.values("gender")[:1]),
+            college=Subquery(additionals.values("college")[:1]),
+            cgpa=Subquery(additionals.values("cgpa")[:1]),
+            skills=Subquery(additionals.values("skills")[:1]),
+            additional_skills=Subquery(additionals.values("additional_skills")[:1]),
+
+        )
+
+        if search_value:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_value) |
+                Q(last_name__icontains=search_value) |
+                Q(email__icontains=search_value) |
+                Q(location__icontains=search_value) |
+                Q(college__icontains=search_value)|
+                Q(skills__icontains=search_value)|
+                Q(additional_skills__icontains=search_value)
+            )
+
+        total_filtered = queryset.count()
+
+        columns = [
+            None,      
+            "id",
+            "first_name",
+            "email",
+            "location",
+            "gender",
+            "college",
+            "cgpa",
+            "skills",
+            "additional_skills"
+        ]
+
+        order_column = columns[int(order_column_index)]
+
+        if order_column:
+            if order_dir == "desc":
+                order_column = "-" + order_column
+
+            queryset = queryset.order_by(order_column)
+
+
+        data = []
+
+        for user in queryset:
+
+            data.append({
+                "checkbox": f'<input type="checkbox" name="user_ids" value="{user.id}">',
+                "id": user.id,
+                "name": f"{user.first_name} {user.last_name or ''}",
+                "email": user.email,
+                "location": user.location or "-",
+                "gender": user.gender or "-",
+                "college": user.college or "-",
+                "cgpa": user.cgpa or "-",
+                "skills": ", ".join(user.skills) if user.skills else "-",
+                "additional_skills": ", ".join(user.additional_skills) if user.additional_skills else "-"
+            })
+
+        return JsonResponse({
+            "draw": draw,
+            "recordsTotal": User.objects.exclude(id=current_user).count(),
+            "recordsFiltered": total_filtered,
+            "data": data
         })
-    return render(request, 'user_list.html' ,{
-        'user_data':user_data
-    })
+    return render(request, "user_list.html")
+
+
 
 @login_required
 def export_users_csv(request):

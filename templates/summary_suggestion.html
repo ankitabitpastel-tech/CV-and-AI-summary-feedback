@@ -248,6 +248,12 @@ function postData(mode) {
             document.getElementById("insightBox").innerText = data.result;
             document.getElementById("insightBox").style.display = "block";
         }
+    })
+    .catch(err => {
+        document.getElementById("loader-overlay").style.display = "none";
+
+        alert("Server is currently unavailable. Please try later.");
+        console.error(err);
     });
 }
 

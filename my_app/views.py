@@ -24,7 +24,7 @@ from django.core.mail import send_mail
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from django.conf import settings
-from django.db.models import OuterRef, Subquery
+
 
 def send_welcome_email(user):
 
@@ -36,12 +36,18 @@ def send_welcome_email(user):
     )
 
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": user.email, "name": user.first_name}],
-        sender={"email": settings.DEFAULT_FROM_EMAIL, "name": "Job Finder"},
+        to=[{
+            "email": user.email,
+            "name": user.first_name
+        }],
+        sender={
+            "email": settings.DEFAULT_FROM_EMAIL,
+            "name": "Job Finder"
+        },
         subject="Welcome to Job Finder 🎉",
         html_content=f"""
             <h2>Welcome {user.first_name} 👋</h2>
-            <p>Thanks for joining Job Finder.</p>
+            <p>Thanks for joining <b>Job Finder</b>.</p>
             <p>We are happy to have you onboard.</p>
             <br>
             <p>Regards,</p>
@@ -53,6 +59,7 @@ def send_welcome_email(user):
         api_instance.send_transac_email(send_smtp_email)
     except ApiException as e:
         print("Brevo API Error:", e)
+
 
 @logout_required
 def welcome(request):
@@ -73,7 +80,6 @@ def signup(request):
                 print("FROM EMAIL:", settings.DEFAULT_FROM_EMAIL)
                 try:
                     send_welcome_email(user)
-
                 except Exception as e:
                     print("Email failed:", e)
 

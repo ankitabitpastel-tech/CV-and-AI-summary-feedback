@@ -3,7 +3,9 @@ from . import views
 
 
 urlpatterns = [
-    path('resume/<int:id>', views.user_resume_view, name='user_resume'),
+    # path('resume/<int:id>', views.user_resume_view, name='user_resume'),
+    path('resume/<str:hash_id>', views.user_resume_view, name='user_resume'),
+
     path("", views.welcome, name="welcome"),
     path("login", views.login, name="login"),
     path("validate-login-field", views.validate_login_field, name="validate_login_field"),

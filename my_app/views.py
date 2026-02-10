@@ -20,10 +20,14 @@ import traceback
 from django.views.decorators.cache import never_cache
 from django.views.decorators.cache import cache_control
 from django.core.mail import send_mail
+from django.db.models import OuterRef, Subquery
 
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
-from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from .utils.encryption import EncryptionService
+
+encryption_service = EncryptionService()
 
 
 def send_welcome_email(user):
@@ -140,6 +144,8 @@ def validate_signup_field(request):
     })
 
 
+
+
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @logout_required
 def login(request):
@@ -202,26 +208,44 @@ def validate_login_field(request):
     
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
+# @login_required
+# def dashboard(request):
+
+#     user_id = request.session.get("user_id")
+    
+
+#     if not user_id:
+#         return redirect("/login")
+
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         request.session.flush()
+#         return redirect("/login")
+#     usage = user.usage_count or {}
+
+#     return render(request, "auth/dashboard.html", {
+#         "user": user, "user_id": user_id, 
+#         "summary_count": usage.get("summary", 0),
+#         "skills_count": usage.get("skills", 0),})
+
 @login_required
 def dashboard(request):
 
     user_id = request.session.get("user_id")
-    
 
-    if not user_id:
-        return redirect("/login")
+    user = get_object_or_404(User, id=user_id)
 
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        request.session.flush()
-        return redirect("/login")
+    user.hash_id = encryption_service.encrypt_id(user.id)
+
     usage = user.usage_count or {}
 
     return render(request, "auth/dashboard.html", {
-        "user": user, "user_id": user_id, 
+        "user": user,
         "summary_count": usage.get("summary", 0),
-        "skills_count": usage.get("skills", 0),})
+        "skills_count": usage.get("skills", 0),
+    })
+
 
 @never_cache
 @login_required
@@ -229,25 +253,42 @@ def logout(request):
     request.session.flush()
     return redirect("/login")
 
-@login_required
-def user_resume_view(request, id):
-    try:
+# @login_required
+# def user_resume_view(request, id):
+#     try:
 
-        user = get_object_or_404(User, id=id)
+#         user = get_object_or_404(User, id=id)
+#         profile = UserAdditionals.objects.filter(user_id=user.id).first()
+
+#         return render(
+#             request,
+#             "resume.html",
+#             {
+#                 "user": user,
+#                 "profile": profile,
+#             }
+#         )
+
+#     except Exception as e:
+#         print("Resume error:", e)
+#         raise Http404("Resume not found")
+@login_required
+def user_resume_view(request, hash_id):
+
+    try:
+        original_id = encryption_service.decrypt_id(hash_id)
+
+        user = get_object_or_404(User, id=original_id)
         profile = UserAdditionals.objects.filter(user_id=user.id).first()
 
-        return render(
-            request,
-            "resume.html",
-            {
-                "user": user,
-                "profile": profile,
-            }
-        )
+        return render(request, "resume.html", {
+            "user": user,
+            "profile": profile,
+        })
 
-    except Exception as e:
-        print("Resume error:", e)
-        raise Http404("Resume not found")
+    except Exception:
+        raise Http404("Invalid user")
+
 
 # @login_required
 def increment_usage(user: User, feedback_type: str):
@@ -498,7 +539,7 @@ def user_list(request):
 
         columns = [
             None,      
-            "id",
+            # "id",
             "first_name",
             "email",
             "location",
@@ -516,15 +557,19 @@ def user_list(request):
                 order_column = "-" + order_column
 
             queryset = queryset.order_by(order_column)
-
+        queryset = queryset[start:start + length]
 
         data = []
 
         for user in queryset:
+            
+            # queryset = queryset[start:start + length]
 
             data.append({
-                "checkbox": f'<input type="checkbox" name="user_ids" value="{user.id}">',
-                "id": user.id,
+                # "checkbox": f'<input type="checkbox" name="user_ids" value="{user.id}">',
+                "checkbox": f'<input type="checkbox" name="user_ids" value="{encryption_service.encrypt_id(user.id)}">',
+
+                # "id": user.id,
                 "name": f"{user.first_name} {user.last_name or ''}",
                 "email": user.email,
                 "location": user.location or "-",

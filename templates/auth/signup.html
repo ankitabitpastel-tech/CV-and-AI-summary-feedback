@@ -59,52 +59,54 @@
 
     <!-- <form method="POST" action="{% url 'signup' %}"> -->
     
-<form id="signupForm" onsubmit="event.preventDefault(); signupUser();">
+<!-- <form id="signupForm" onsubmit="event.preventDefault(); signupUser();"> -->
+<form id="signupForm" >
+
 {% csrf_token %}
 
 <!-- FIRST NAME -->
 <div class="mb-3">
 <label>First Name <span class="text-danger">*</span></label>
-<input id="first_name" class="form-control">
+<input id="first_name" name="first_name" class="form-control">
 <div class="invalid-feedback" id="first_name_error"></div>
 </div>
 
 <!-- LAST NAME -->
 <div class="mb-3">
 <label>Last Name</label>
-<input id="last_name" class="form-control">
+<input id="last_name" name="last_name" class="form-control">
 <div class="invalid-feedback" id="last_name_error"></div>
 </div>
 
 <!-- EMAIL -->
 <div class="mb-3">
 <label>Email <span class="text-danger">*</span></label>
-<input id="email" type="email" class="form-control">
+<input id="email" name="email" type="email" class="form-control">
 <div class="invalid-feedback" id="email_error"></div>
 </div>
 
 <!-- USERNAME -->
 <div class="mb-3">
 <label>Username <span class="text-danger">*</span></label>
-<input id="username" class="form-control">
+<input id="username" name="username" class="form-control">
 <div class="invalid-feedback" id="username_error"></div>
 </div>
 
 <!-- PASSWORD -->
 <div class="mb-3">
 <label>Password <span class="text-danger">*</span></label>
-<input id="password" type="password" class="form-control">
+<input id="password" name="password" type="password" class="form-control">
 <div class="invalid-feedback" id="password_error"></div>
 </div>
 
 <!-- CONFIRM -->
 <div class="mb-3">
 <label>Confirm Password <span class="text-danger">*</span></label>
-<input id="confirm_password" type="password" class="form-control">
+<input id="confirm_password" name="confirm_password" type="password" class="form-control">
 <div class="invalid-feedback" id="confirm_password_error"></div>
 </div>
 
-<button class="btn btn-primary w-100">
+<button id="signupBtn" class="btn btn-primary w-100">
 Signup
 </button>
 
@@ -119,12 +121,20 @@ Signup
     <div id="msg"></div>
 
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/jquery.validation/1.19.5/jquery.validate.min.js"></script>
 
 <script>
 
 function signupUser() {
 
     clearErrors();
+
+    const btn = document.getElementById("signupBtn");
+
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Signing up...`;
+    btn.disabled = true;
 
     fetch("/signup", {
         method: "POST",
@@ -151,6 +161,8 @@ function signupUser() {
     })
     .then(data => {
 
+        btn.innerHTML = "Signup";
+        btn.disabled = false;
         // if (data.success) {
         //     window.location.href = data.redirect;
         if (data.success) {
@@ -170,6 +182,10 @@ function signupUser() {
         }
     })
     .catch(err => {
+
+        btn.innerHTML = "Signup";
+        btn.disabled = false;
+
         console.error(err);
         alert("Something went wrong");
     });
@@ -304,6 +320,10 @@ function validateSignup(activeField){
 
     });
 }
+
+
+
+
 
 function showToast(message, type="success"){
 

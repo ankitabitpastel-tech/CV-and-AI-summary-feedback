@@ -86,7 +86,7 @@
     <h3 class="text-center mb-3 fw-bold">Welcome Back</h3>
 
     <form id="loginForm">
-
+        {% csrf_token %}
         <!-- Username -->
         <div class="mb-3">
             <label class="form-label">Username or Email <span class="text-danger">*</span></label>

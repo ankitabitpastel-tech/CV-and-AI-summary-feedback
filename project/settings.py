@@ -28,6 +28,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_KEY = os.environ.get("API_KEY")
 
+
+FERNET_SECRET_KEY = os.getenv("FERNET_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 # ALLOWED_HOSTS = ['.onrender.com']

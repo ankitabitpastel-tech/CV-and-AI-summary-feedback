@@ -60,7 +60,7 @@
     <!-- <form method="POST" action="{% url 'signup' %}"> -->
     
 <!-- <form id="signupForm" onsubmit="event.preventDefault(); signupUser();"> -->
-<form id="signupForm" >
+<form id="signupForm" method="POST">
 
 {% csrf_token %}
 
@@ -106,7 +106,7 @@
 <div class="invalid-feedback" id="confirm_password_error"></div>
 </div>
 
-<button id="signupBtn" class="btn btn-primary w-100">
+<button type="submit" id="signupBtn" class="btn btn-primary w-100">
 Signup
 </button>
 
@@ -322,7 +322,10 @@ function validateSignup(activeField){
 }
 
 
-
+$("#signupForm").on("submit", function(e){
+    e.preventDefault();
+    signupUser();
+});
 
 
 function showToast(message, type="success"){

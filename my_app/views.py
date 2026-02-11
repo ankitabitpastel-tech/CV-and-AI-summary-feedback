@@ -144,7 +144,24 @@ def validate_signup_field(request):
     })
 
 
+# def validate_signup_field(request):
+#     if request.method == "POST":
+#         try:
+#             body = json.loads(request.body)
+#             field = body.get("field")
+#             value = body.get("value")
+#         except:
+#             return JsonResponse({"valid": True})  # fallback
 
+#         if field == "email":
+#             exists = User.objects.filter(email=value).exists()
+#             return JsonResponse({"valid": not exists})
+
+#         if field == "username":
+#             exists = User.objects.filter(username=value).exists()
+#             return JsonResponse({"valid": not exists})
+
+#     return JsonResponse({"valid": True})
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @logout_required
